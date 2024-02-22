@@ -6,6 +6,11 @@
 #
 # Original author: Ellen Kidane
 #
+# Logan Lucas
+# Project 2
+# CS 341
+# Spring 2024
+#
 import datatier
 
 
@@ -21,7 +26,28 @@ import datatier
 #   Phone: string
 #
 class Lobbyist:
-   pass
+   def __init__(self, id, firstName, lastName, phone):
+      self._Lobbyist_ID = id
+      self._First_Name = firstName
+      self._Last_Name = lastName
+      self._Phone = phone
+
+   @property
+   def Lobbyist_ID(self):
+      return self._Lobbyist_ID
+   
+   @property
+   def First_Name(self):
+      return self._First_Name
+   
+   @property 
+   def Last_Name(self):
+      return self._Last_Name
+   
+   @property
+   def Phone(self):
+      return self._Phone
+
 
 ##################################################################
 #
@@ -49,7 +75,98 @@ class Lobbyist:
 #   Total_Compensation: float
 #
 class LobbyistDetails:
-   pass
+   def __init__(self, id, salutation, firstName, middleInitial, lastName, suffix, address1, address2, city, stateInitial, zipCode, country, email, phone, fax, yearsRegistered, employers, totalCompensation):
+      self._Lobbyist_ID = id
+      self._Salutation = salutation
+      self._First_Name = firstName
+      self._Middle_Initial = middleInitial
+      self._Last_Name = lastName
+      self._Suffix = suffix
+      self._Address_1 = address1
+      self._Address_2 = address2
+      self._City = city
+      self._State_Initial = stateInitial
+      self._Zip_Code = zipCode
+      self._Country = country
+      self._Email = email
+      self._Phone = phone
+      self._Fax = fax
+      self._Years_Registered = yearsRegistered
+      self._Employers = employers
+      self._Total_Compensation = totalCompensation
+   
+   @property
+   def Lobbyist_Id(self):
+      return self._Lobbyist_ID
+   
+   @property
+   def Salutation(self):
+      return self._Salutation
+   
+   @property
+   def First_Name(self):
+      return self._First_Name
+   
+   @property
+   def Middle_Initial(self):
+      return self._Middle_Initial
+   
+   @property
+   def Last_Name(self):
+      return self._Last_Name
+   
+   @property
+   def Suffix(self):
+      return self._Suffix
+   
+   @property
+   def Address_1(self):
+      return self._Address_1
+   
+   @property
+   def Address_2(self):
+      return self._Address_2
+   
+   @property
+   def City(self):
+      return self._City
+   
+   @property
+   def State_Initial(self):
+      return self._State_Initial
+   
+   @property
+   def Zip_Code(self):
+      return self._Zip_Code
+   
+   @property
+   def Country(self):
+      return self._Country
+   
+   @property
+   def Email(self):
+      return self._Email
+   
+   @property
+   def Phone(self):
+      return self._Phone
+   
+   @property
+   def Fax(self):
+      return self._Fax
+   
+   @property
+   def Years_Registered(self):
+      return self._Years_Registered
+   
+   @property
+   def Employers(self):
+      return self._Employers
+   
+   @property
+   def Total_Compensation(self):
+      return self._Total_Compensation
+
 
 ##################################################################
 #
@@ -65,7 +182,38 @@ class LobbyistDetails:
 #   Clients: list of clients
 #
 class LobbyistClients:
-   pass
+   def __init__(self, lobbyistId, firstName, lastName, phone, totalCompensation, clients):
+      self._Lobbyist_ID = lobbyistId
+      self._First_Name = firstName
+      self._Last_Name = lastName
+      self._Phone = phone
+      self._Total_Compensation = totalCompensation
+      self._Clients = clients
+
+   @property
+   def Lobbyist_ID(self):
+      return self._Lobbyist_ID
+   
+   @property
+   def First_Name(self):
+      return self._First_Name
+   
+   @property
+   def Last_Name(self):
+      return self._Last_Name
+   
+   @property
+   def Phone(self):
+      return self._Phone
+   
+   @property
+   def Total_Compensation(self):
+      return self._Total_Compensation
+   
+   @property
+   def Clients(self):
+      return self._Clients
+
 
 ##################################################################
 # 
@@ -75,7 +223,17 @@ class LobbyistClients:
 #           If an error occurs, the function returns -1
 #
 def num_lobbyists(dbConn):
-   pass
+   query = """SELECT count(DISTINCT Lobbyist_ID) AS Num_Lobbyists
+   FROM LobbyistInfo"""
+
+   numLobbyists = datatier.select_one_row(dbConn, query)[0]
+
+   # error checking
+   if numLobbyists == None:
+      return -1
+   
+   return numLobbyists
+
 
 ##################################################################
 # 
@@ -85,7 +243,17 @@ def num_lobbyists(dbConn):
 #           If an error occurs, the function returns -1
 #
 def num_employers(dbConn):
-   pass
+   query = """SELECT count(DISTINCT Employer_ID) AS Num_Employers
+   FROM EmployerInfo"""
+
+   numEmployers = datatier.select_one_row(dbConn, query)[0]
+
+   # error checking
+   if numEmployers == None:
+      return -1
+   
+   return numEmployers
+
 
 ##################################################################
 # 
@@ -95,7 +263,17 @@ def num_employers(dbConn):
 #           If an error occurs, the function returns -1
 #
 def num_clients(dbConn):
-   pass
+   query = """SELECT count(DISTINCT Client_ID) AS Num_Clients
+   FROM ClientInfo"""
+
+   numClients = datatier.select_one_row(dbConn, query)[0]
+
+   #error checking
+   if numClients == None:
+      return -1
+   
+   return numClients
+
 
 ##################################################################
 #
@@ -111,7 +289,22 @@ def num_clients(dbConn):
 #          which case an error msg is already output).
 #
 def get_lobbyists(dbConn, pattern):
-   pass
+   query = """SELECT Lobbyist_ID, First_Name, Last_Name, Phone
+   FROM LobbyistInfo
+   WHERE First_Name LIKE ? OR Last_Name LIKE ?
+   ORDER BY Lobbyist_ID ASC"""
+
+   parameters = [pattern, pattern]
+
+   results = datatier.select_n_rows(dbConn, query, parameters)
+
+   lobbyists = []
+
+   for result in results:
+      lobbyist = Lobbyist(result[0], result[1], result[2], result[3])
+      lobbyists.append(lobbyist)
+      
+   return lobbyists
 
 
 ##################################################################
