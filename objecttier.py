@@ -96,7 +96,7 @@ class LobbyistDetails:
       self._Total_Compensation = totalCompensation
    
    @property
-   def Lobbyist_Id(self):
+   def Lobbyist_ID(self):
       return self._Lobbyist_ID
    
    @property
@@ -268,7 +268,7 @@ def num_clients(dbConn):
 
    numClients = datatier.select_one_row(dbConn, query)[0]
 
-   #error checking
+   # error checking
    if numClients == None:
       return -1
    
@@ -321,7 +321,45 @@ def get_lobbyists(dbConn, pattern):
 #          case an error msg is already output).
 #
 def get_lobbyist_details(dbConn, lobbyist_id):
-   pass
+   mainQuery = """SELECT LobbyistInfo.Lobbyist_ID, Salutation, First_Name, Middle_Initial, Last_Name, Suffix, Address_1, Address_2, City, State_Initial, ZipCode, Country, Email, Phone, Fax
+   FROM LobbyistInfo
+   WHERE LobbyistInfo.Lobbyist_ID = ?"""
+
+   yearsQuery = """SELECT Year
+   FROM LobbyistYears
+   WHERE Lobbyist_ID = ?"""
+
+   employersQuery = """SELECT Employer_Name
+   FROM EmployerInfo
+   JOIN LobbyistAndEmployer ON EmployerInfo.Employer_ID = LobbyistAndEmployer.Employer_ID
+   WHERE Lobbyist_ID = ?
+   GROUP BY Employer_Name"""
+
+   compensationQuery = """SELECT sum(Compensation_Amount)
+   FROM Compensation
+   WHERE Lobbyist_ID = ?"""
+
+   parameters = [lobbyist_id]
+
+   result = datatier.select_one_row(dbConn, mainQuery, parameters)
+
+   if result == None or result == ():
+      return None
+
+   years = datatier.select_n_rows(dbConn, yearsQuery, parameters)
+   years = [year[0] for year in years] # list comprehension for tuples -> ints
+
+   employers = datatier.select_n_rows(dbConn, employersQuery, parameters)
+   employers = [employer[0] for employer in employers] # list comprehension for tuples -> strings
+
+   compensation = datatier.select_one_row(dbConn, compensationQuery, parameters)[0]
+
+   if compensation == None:
+      compensation = 0.0
+   
+   details = LobbyistDetails(result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7], result[8], result[9], result[10], result[11], result[12], result[13], result[14], years, employers, compensation)
+
+   return details
          
 
 ##################################################################
@@ -337,7 +375,55 @@ def get_lobbyist_details(dbConn, lobbyist_id):
 #          occurs (in which case an error msg is already output).
 #
 def get_top_N_lobbyists(dbConn, N, year):
-   pass
+   mainQuery = """SELECT LobbyistInfo.Lobbyist_ID, First_Name, Last_Name, Phone, sum(Compensation_Amount) AS Total_Compensation
+   FROM Compensation
+   JOIN LobbyistInfo ON Compensation.Lobbyist_ID = LobbyistInfo.Lobbyist_ID
+   WHERE strftime("%Y", Period_Start) = ? OR strftime("%Y", Period_End) = ?
+   GROUP BY LobbyistInfo.Lobbyist_ID
+   ORDER BY Total_Compensation DESC
+   LIMIT ?"""
+
+   parameters = [year, year, N]
+   
+   idList = []
+
+   results = datatier.select_n_rows(dbConn, mainQuery, parameters)
+
+   for result in results:
+      idList.append(result[0])
+   
+   clientQuery = """SELECT Client_Name
+   FROM ClientInfo
+   JOIN Compensation ON ClientInfo.Client_ID = Compensation.Client_ID
+   WHERE Lobbyist_ID = ? AND strftime("%Y", Period_Start) = ?
+   GROUP BY Lobbyist_ID, ClientInfo.Client_ID
+   ORDER BY Client_Name ASC
+   """
+
+   clients = []
+   for i in range(0, N):
+      clients.append(datatier.select_n_rows(dbConn, clientQuery, [idList[i], year]))
+
+   # gross section for list comprehension from list(list(tuples)) -> list(list(strings))
+   tempList = []
+   for clientList in clients:
+      temp = [client[0] for client in clientList]
+      tempList.append(temp)
+
+   clients = tempList
+
+   if results == [] or results == None:
+      return []
+
+   lobbyists = []
+   
+   count = 0
+   for result in results:
+      newLobbyist = LobbyistClients(result[0], result[1], result[2], result[3], result[4], clients[count])
+      lobbyists.append(newLobbyist)
+      count += 1
+   
+   return lobbyists
 
 
 ##################################################################
@@ -353,7 +439,24 @@ def get_top_N_lobbyists(dbConn, N, year):
 #          an internal error occurred).
 #
 def add_lobbyist_year(dbConn, lobbyist_id, year):
-   pass
+   checkLobbyistQuery = """SELECT count(*)
+   FROM LobbyistYears
+   WHERE Lobbyist_ID = ?"""
+
+   lobbyistCheck = datatier.select_one_row(dbConn, checkLobbyistQuery, [lobbyist_id])[0]
+   if lobbyistCheck == 0:
+      return 0
+
+   query = """INSERT INTO LobbyistYears(Lobbyist_ID, Year)
+   VALUES(?, ?)"""
+
+   parameters = [lobbyist_id, year]
+
+   modified = datatier.perform_action(dbConn, query, parameters)
+
+   if modified == -1:
+      return 0
+   return 1
 
 
 ##################################################################
@@ -372,4 +475,23 @@ def add_lobbyist_year(dbConn, lobbyist_id, year):
 #          an internal error occurred).
 #
 def set_salutation(dbConn, lobbyist_id, salutation):
-   pass
+   checkLobbyistQuery = """SELECT count(*)
+   FROM LobbyistInfo
+   WHERE Lobbyist_ID = ?"""
+
+   lobbyistCheck = datatier.select_one_row(dbConn, checkLobbyistQuery, [lobbyist_id])[0]
+   if lobbyistCheck == 0:
+      return 0
+   
+   query = """UPDATE LobbyistInfo
+   SET Salutation = ?
+   WHERE Lobbyist_ID = ?"""
+
+   parameters = [salutation, lobbyist_id]
+
+   modified = datatier.perform_action(dbConn, query, parameters)
+
+   if modified == -1:
+      return 0
+   return 1
+
