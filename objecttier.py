@@ -454,7 +454,7 @@ def add_lobbyist_year(dbConn, lobbyist_id, year):
 
    modified = datatier.perform_action(dbConn, query, parameters)
 
-   if modified == -1:
+   if modified == -1 or modified == 0:
       return 0
    return 1
 
