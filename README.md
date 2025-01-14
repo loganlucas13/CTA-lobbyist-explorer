@@ -6,5 +6,5 @@
 * Uses a three-tiered architecture to increase modularity
 
 ## Instructions
-1. Clone this repo using `git clone https://github.com/loganlucas13/CTA-lobbyist-app.git` in the terminal
+1. Clone this repo using `git clone https://github.com/loganlucas13/CTA-lobbyist-explorer.git` in the terminal
 2. Inside of the root directory, use the command `python3 main.py` to run.
